@@ -54,3 +54,8 @@ Bot：[@awesomeopensource_search_bot](http://t.me/awesomeopensource_search_bot)
     修改 docker-compose.yml 中的环境变量
 
     使用 docker-compose 部署：`docker-compose up -d`
+
+## 继续开发
+
+项目的初衷是为 [@awesomeopensource](https://t.me/awesomeopensource) 提供搜索服务，目前 Bot 的功能已经足够。
+但是如果你有其他功能的需求，比如 按用户搜索、Inline query 等需求，请在 issues 中告诉我。
