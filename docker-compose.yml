@@ -1,0 +1,34 @@
+version: '3.5'
+
+services:
+  redis:
+    restart: unless-stopped
+    image: redis
+
+  telegram-search:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - elasticsearch
+    volumes:
+      - ./session:/app/session
+    environment:
+      - REDIS_HOST=redis
+      - ELASTIC_URL=http://elasticsearch:9200/
+      # - API_ID=123456
+      # - API_HASH=ABC
+      # - BOT_TOKEN=ASDAWDEWADAW
+
+  elasticsearch:
+    build: ./elasticsearch
+    restart: unless-stopped
+    volumes:
+      - data:/usr/share/elasticsearch/data
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - cluster.initial_master_nodes=es01
+
+volumes:
+  data:

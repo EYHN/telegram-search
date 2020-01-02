@@ -1,0 +1,4 @@
+elasticsearch==7.1.0
+PySocks==1.7.1
+redis==3.3.11
+Telethon==1.10.10
