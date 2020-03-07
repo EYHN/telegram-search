@@ -4,14 +4,14 @@ import asyncio
 import html
 import os
 
-REDIS_HOST = "REDIS_HOST" in os.environ and os.environ["REDIS_HOST"] or 'localhost'
+REDIS_HOST = "REDIS_HOST" in os.environ and os.environ["REDIS_HOST"] or '127.0.0.1'
 REDIS_PORT = "REDIS_PORT" in os.environ and os.environ["REDIS_PORT"] or 6379
-ELASTIC_URL = "ELASTIC_URL" in os.environ and os.environ["ELASTIC_URL"] or 'http://localhost:9200/'
-API_ID = "API_ID" in os.environ and os.environ["API_ID"] or 123456
-API_HASH = "API_HASH" in os.environ and os.environ["API_HASH"] or 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-BOT_TOKEN = "BOT_TOKEN" in os.environ and os.environ["BOT_TOKEN"] or '123456789:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-CHAT_ID = "CHAT_ID" in os.environ and os.environ["CHAT_ID"] or '-1001254246410'
-ADMIN_ID = "ADMIN_ID" in os.environ and os.environ["ADMIN_ID"] or '345796292'
+ELASTIC_URL = "ELASTIC_URL" in os.environ and os.environ["ELASTIC_URL"] or 'http://127.0.0.1:9200/'
+API_ID = "API_ID" in os.environ and os.environ["API_ID"] or 135
+API_HASH = "API_HASH" in os.environ and os.environ["API_HASH"] or 'abcd'
+BOT_TOKEN = "BOT_TOKEN" in os.environ and os.environ["BOT_TOKEN"] or '10264:abcd'
+CHAT_ID = "CHAT_ID" in os.environ and os.environ["CHAT_ID"] or ' -1001'
+ADMIN_ID = "ADMIN_ID" in os.environ and os.environ["ADMIN_ID"] or '436'
 
 from elasticsearch import Elasticsearch
 es = Elasticsearch([ELASTIC_URL])
@@ -24,21 +24,20 @@ api_id = str(API_ID)
 api_hash = API_HASH
 bot_token = BOT_TOKEN
 
-# proxy = (socks.SOCKS5, '127.0.0.1', 7777)
-proxy = None
+proxy = (socks.SOCKS5, '127.0.0.1', 1086)
+#proxy = None
 
 chat_id = int(CHAT_ID)
 admin_id = int(ADMIN_ID)
 
 welcome_message = '''
-这里是 @awesomeopensource 的搜索 Bot，直接发送你要搜索的内容即可。搜索支持 Lucene 语法。
-例如：
-`每日速览`
-`+每日速览 +date:2019-12-25`
-`+每日速览 +date:[2019-12-25 TO 2019-12-30]`
+这里是中文搜索bot，请直接发送你要搜索的内容进行搜索。例如：
+支持
++支持 +钦定
 '''
 
 share_id = chat_id < 0 and chat_id * -1 - 1000000000000 or chat_id
+#chat-1001172987634
 elastic_index = "chat" + str(chat_id)
 
 mapping = {
@@ -46,7 +45,8 @@ mapping = {
     "content": {
       "type": "text",
       "analyzer": "ik_max_word",
-      "search_analyzer": "ik_smart"
+#      "search_analyzer": "ik_smart"
+      "search_analyzer": "ik_max_word"
     },
     "url": {
       "type": "text"
@@ -67,6 +67,7 @@ def deleteElasticIndex(index):
       es.indices.delete(index=elastic_index)
 
 def search(q, from_, size=10):
+  print('start search')
   ensureElasticIndex(index=elastic_index, mapping=mapping)
   return es.search(index=elastic_index, q=q, df="content", size=10, from_=from_, body={
     "highlight" : {
@@ -124,8 +125,10 @@ async def downloadHistory():
   deleteElasticIndex(index=elastic_index)
   ensureElasticIndex(index=elastic_index, mapping=mapping)
   async for message in client.iter_messages(chat_id):
+    print('elastic index:', elastic_index)
     if message.chat_id == chat_id and message.raw_text and len(message.raw_text.strip()) >= 0:
       print(message.id)
+      print(message.raw_text)
       es.index(
         index=elastic_index,
         body={"content": html.escape(message.raw_text).replace('\n',' '), "date": int(message.date.timestamp() * 1000), "url": "https://t.me/c/%s/%s" % (share_id, message.id)},
@@ -134,18 +137,24 @@ async def downloadHistory():
 
 @events.register(events.NewMessage)
 async def BotMessageHandler(event):
-  if event.raw_text.startswith('/start'):
+  print('event from_id:', event.from_id)
+  if event.raw_text.startswith('/bobo'):
     await event.respond(welcome_message, parse_mode='markdown')
-  elif event.raw_text.startswith('/download_history') and event.chat_id == admin_id:
+  elif event.raw_text.startswith('/download_history') and event.from_id == admin_id:
     # 下载所有历史记录
     await event.respond('开始下载历史记录', parse_mode='markdown')
     await downloadHistory()
     await event.respond('下载完成', parse_mode='markdown')
-  else:
+  elif event.chat_id != chat_id:
+    print('chat_id', event.chat_id)
+    print('start search')
     from_i = 0
     q = event.raw_text
+    print('raw_text:', event.raw_text)
     result = search(q, from_i)
     respond = renderRespondText(result, from_i)
+    print('get the result')
+    print(result)
     buttons = renderRespondButton(result, from_i)
     msg = await event.respond(respond, parse_mode='html', buttons=buttons)
 

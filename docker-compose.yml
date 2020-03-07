@@ -4,31 +4,34 @@ services:
   redis:
     restart: unless-stopped
     image: redis
+    ports:
+      - "127.0.0.1:6379:6379"
 
-  telegram-search:
-    build: .
-    restart: unless-stopped
-    depends_on:
-      - redis
-      - elasticsearch
-    volumes:
-      - ./session:/app/session
-    environment:
-      - REDIS_HOST=redis
-      - ELASTIC_URL=http://elasticsearch:9200/
-      # - API_ID=123456
-      # - API_HASH=ABC
-      # - BOT_TOKEN=ASDAWDEWADAW
+#  telegram-search:
+#    build: .
+#    restart: unless-stopped
+#    depends_on:
+#      - redis
+#      - elasticsearch
+#    volumes:
+#      - ./session:/app/session
+#    environment:
+#      - REDIS_HOST=redis
+#      - ELASTIC_URL=http
+#      - API_ID=1354710
+#      - API_HASH=
+#      - BOT_TOKEN=1
 
   elasticsearch:
     build: ./elasticsearch
     restart: unless-stopped
     volumes:
-      - data:/usr/share/elasticsearch/data
+      - /Users/xie/telegram-search/data:/usr/share/elasticsearch/data
     environment:
-      - node.name=es01
-      - cluster.name=es-docker-cluster
-      - cluster.initial_master_nodes=es01
+      - discovery.type=single-node
+    ports:
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9300:9200"
 
 volumes:
   data:
