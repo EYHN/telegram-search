@@ -26,7 +26,7 @@ services:
     build: ./elasticsearch
     restart: unless-stopped
     volumes:
-      - /Users/xie/telegram-search/data:/usr/share/elasticsearch/data
+      - /data:/usr/share/elasticsearch/data
     environment:
       - discovery.type=single-node
     ports:
