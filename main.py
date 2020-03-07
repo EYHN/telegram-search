@@ -24,8 +24,8 @@ api_id = str(API_ID)
 api_hash = API_HASH
 bot_token = BOT_TOKEN
 
-proxy = (socks.SOCKS5, '127.0.0.1', 1086)
-#proxy = None
+#proxy = (socks.SOCKS5, '127.0.0.1', 1086)
+proxy = None
 
 chat_id = int(CHAT_ID)
 admin_id = int(ADMIN_ID)
@@ -69,7 +69,7 @@ def deleteElasticIndex(index):
 def search(q, from_, size=10):
   print('start search')
   ensureElasticIndex(index=elastic_index, mapping=mapping)
-  return es.search(index=elastic_index, q=q, df="content", size=10, from_=from_, body={
+  return es.search(index=elastic_index, q=q, df="content", sort="date:desc", size=10, from_=from_, body={
     "highlight" : {
       "pre_tags" : ["<b>"],
       "post_tags" : ["</b>"],
@@ -146,15 +146,10 @@ async def BotMessageHandler(event):
     await downloadHistory()
     await event.respond('下载完成', parse_mode='markdown')
   elif event.chat_id != chat_id:
-    print('chat_id', event.chat_id)
-    print('start search')
     from_i = 0
     q = event.raw_text
-    print('raw_text:', event.raw_text)
     result = search(q, from_i)
     respond = renderRespondText(result, from_i)
-    print('get the result')
-    print(result)
     buttons = renderRespondButton(result, from_i)
     msg = await event.respond(respond, parse_mode='html', buttons=buttons)
 
