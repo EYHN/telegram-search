@@ -3,15 +3,20 @@ import socks
 import asyncio
 import html
 import os
+from datetime import datetime
+from config import config_redis_host, config_redis_port, config_elastic_url
+from config import config_api_id, config_api_hash, config_bot_token
+from config import config_admin_id, config_chat_id
 
-REDIS_HOST = "REDIS_HOST" in os.environ and os.environ["REDIS_HOST"] or '127.0.0.1'
-REDIS_PORT = "REDIS_PORT" in os.environ and os.environ["REDIS_PORT"] or 6379
-ELASTIC_URL = "ELASTIC_URL" in os.environ and os.environ["ELASTIC_URL"] or 'http://127.0.0.1:9200/'
-API_ID = "API_ID" in os.environ and os.environ["API_ID"] or 135
-API_HASH = "API_HASH" in os.environ and os.environ["API_HASH"] or 'abcd'
-BOT_TOKEN = "BOT_TOKEN" in os.environ and os.environ["BOT_TOKEN"] or '10264:abcd'
-CHAT_ID = "CHAT_ID" in os.environ and os.environ["CHAT_ID"] or ' -1001'
-ADMIN_ID = "ADMIN_ID" in os.environ and os.environ["ADMIN_ID"] or '436'
+REDIS_HOST = "REDIS_HOST" in os.environ and os.environ["REDIS_HOST"] or config_redis_host
+REDIS_PORT = "REDIS_PORT" in os.environ and os.environ["REDIS_PORT"] or config_redis_port
+ELASTIC_URL = "ELASTIC_URL" in os.environ and os.environ["ELASTIC_URL"] or config_elastic_url
+API_ID = "API_ID" in os.environ and os.environ["API_ID"] or config_api_id
+API_HASH = "API_HASH" in os.environ and os.environ["API_HASH"] or config_api_hash
+BOT_TOKEN = "BOT_TOKEN" in os.environ and os.environ["BOT_TOKEN"] or config_bot_token
+CHAT_ID = "CHAT_ID" in os.environ and os.environ["CHAT_ID"] or config_chat_id
+ADMIN_ID = "ADMIN_ID" in os.environ and os.environ["ADMIN_ID"] or config_admin_id
+
 
 from elasticsearch import Elasticsearch
 es = Elasticsearch([ELASTIC_URL])
@@ -24,20 +29,43 @@ api_id = str(API_ID)
 api_hash = API_HASH
 bot_token = BOT_TOKEN
 
-#proxy = (socks.SOCKS5, '127.0.0.1', 1086)
-proxy = None
+proxy = (socks.SOCKS5, '127.0.0.1', 1086)
+#proxy = None
 
 chat_id = int(CHAT_ID)
 admin_id = int(ADMIN_ID)
 
-welcome_message = '''
-这里是中文搜索bot，请直接发送你要搜索的内容进行搜索。例如：
-支持
-+支持 +钦定
+
+
+help_message = '''
+这里是投资人生夸夸群的中文搜索bot，请点击我的头像，打开和我的对话框，直接发送您想搜索的内容。搜索支持Lucene 语法。示例如下：
+1. 如果您想搜索黄金，则发送
+黄金
+
+2. 如果您想搜索黄金以及购买两个关键词，则发送：
++黄金 +购买 
+
+3. 如果您想搜索某用户说过的关于黄金的话，则发送：
++黄金 +name:nobody
+
+4. 如果您想搜索某天出现的关于黄金的记录，则发送：
++黄金 +date:2020-3-8
+
+5. 如果您想搜索某个时间段内出现的关于黄金的记录，则发送:
++黄金 +date:[2020-3-1 TO 2020-3-8]
+
+6. 上述方式可以组合，例如：
++黄金 +date:[2020-3-1 TO 2020-3-8] +name:nobody
+
 '''
 
+welcome_message = '''
+这里是投资人生夸夸群的中文搜索bot，请点击我的头像，打开和我的对话框，直接发送您想搜索的内容。
+'''
+
+
 share_id = chat_id < 0 and chat_id * -1 - 1000000000000 or chat_id
-#chat-1001172987634
+
 elastic_index = "chat" + str(chat_id)
 
 mapping = {
@@ -45,14 +73,22 @@ mapping = {
     "content": {
       "type": "text",
       "analyzer": "ik_max_word",
-#      "search_analyzer": "ik_smart"
-      "search_analyzer": "ik_max_word"
+      "search_analyzer": "ik_smart"
     },
     "url": {
       "type": "text"
     },
     "date": {
-      "type": "date"
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+    },
+    "name": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart"
+    },
+    "username":{
+        "type": "keyword"
     }
   }
 }
@@ -67,7 +103,6 @@ def deleteElasticIndex(index):
       es.indices.delete(index=elastic_index)
 
 def search(q, from_, size=10):
-  print('start search')
   ensureElasticIndex(index=elastic_index, mapping=mapping)
   return es.search(index=elastic_index, q=q, df="content", sort="date:desc", size=10, from_=from_, body={
     "highlight" : {
@@ -89,8 +124,9 @@ def renderRespondText(result, from_):
   for i in range(len(result['hits']['hits'])):
     hit = result['hits']['hits'][i]
     content = 'highlight' in hit and hit['highlight']['content'][0] or hit['_source']['content'][0:15]
-
-    respond += '%d. <a href="%s">%s</a>\n' % (from_ + i + 1, hit['_source']['url'], content)
+    date = datetime.fromtimestamp(int(hit['_source']['date'] )/ 1000)
+    date = date.strftime('%Y-%m-%d') 
+    respond += '%d. <a href="%s">%s</a>\n name: <a href="https://t.me/%s">%s</a>\n date: %s\n\r' % (from_ + i + 1, hit['_source']['url'], content, hit['_source']['username'],hit['_source']['name'], date)
   respond += '耗时%.3f秒。' % (result['took'] / 1000)
   return respond
 
@@ -106,7 +142,12 @@ def renderRespondButton(result, from_):
 @events.register(events.NewMessage)
 async def ClientMessageHandler(event):
   if event.chat_id == chat_id and event.raw_text and len(event.raw_text.strip()) >= 0:
-    es.index(index=elastic_index, body={"content": html.escape(event.raw_text).replace('\n',' '), "date": int(event.date.timestamp() * 1000), "url": "https://t.me/c/%s/%s" % (share_id, event.id)}, id=event.id)
+    es.index(index=elastic_index, body={"content": html.escape(event.raw_text).replace('\n',' '), 
+                                        "date": int(event.date.timestamp()*1000), 
+                                        "url": "https://t.me/c/%s/%s" % (share_id, event.id),
+                                        "name": (" ".join([event.sender.first_name or '', event.sender.last_name or ''])).strip(),
+                                        "username": event.sender.username or ''
+                                        }, id=event.id)
 
 @events.register(events.CallbackQuery)
 async def BotCallbackHandler(event):
@@ -124,22 +165,47 @@ async def BotCallbackHandler(event):
 async def downloadHistory():
   deleteElasticIndex(index=elastic_index)
   ensureElasticIndex(index=elastic_index, mapping=mapping)
-  async for message in client.iter_messages(chat_id):
+  async for message in client.iter_messages(chat_id, reverse=True):
     print('elastic index:', elastic_index)
     if message.chat_id == chat_id and message.raw_text and len(message.raw_text.strip()) >= 0:
-      print(message.id)
+      print('start to index the message!')
       print(message.raw_text)
-      es.index(
-        index=elastic_index,
-        body={"content": html.escape(message.raw_text).replace('\n',' '), "date": int(message.date.timestamp() * 1000), "url": "https://t.me/c/%s/%s" % (share_id, message.id)},
-        id=message.id
-      )
+      first_name = ''
+      last_name = ''
+      username = ''
+      try:
+        if message.sender.first_name:
+          first_name = message.sender.first_name
+        if message.sender.last_name:
+          last_name = message.sender.last_name
+        if message.sender.username:
+          username = message.sender.username
+      except:
+        pass
+
+      try:
+        es.index(
+          index=elastic_index,
+          body={"content": html.escape(message.raw_text).replace('\n',' '), 
+              "date": int(message.date.timestamp() * 1000), 
+              "url": "https://t.me/c/%s/%s" % (share_id, message.id),
+              "name": " ".join([first_name, last_name]).strip(),
+              "username": username
+              },
+          id=message.id
+        )
+      except:
+        pass
 
 @events.register(events.NewMessage)
 async def BotMessageHandler(event):
   print('event from_id:', event.from_id)
-  if event.raw_text.startswith('/bobo'):
+  if event.raw_text.startswith('/start'):
     await event.respond(welcome_message, parse_mode='markdown')
+
+  elif event.raw_text.startswith('/help'):
+    await event.respond(help_message, parse_mode='markdown')
+
   elif event.raw_text.startswith('/download_history') and event.from_id == admin_id:
     # 下载所有历史记录
     await event.respond('开始下载历史记录', parse_mode='markdown')

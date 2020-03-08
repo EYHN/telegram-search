@@ -29,6 +29,11 @@ services:
       - /data:/usr/share/elasticsearch/data
     environment:
       - discovery.type=single-node
+      - http.port=9200
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
+      - http.cors.allow-credentials=true
     ports:
       - "127.0.0.1:9200:9200"
       - "127.0.0.1:9300:9200"
