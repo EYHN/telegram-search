@@ -29,8 +29,8 @@ api_id = str(API_ID)
 api_hash = API_HASH
 bot_token = BOT_TOKEN
 
-proxy = (socks.SOCKS5, '127.0.0.1', 1086)
-#proxy = None
+#proxy = (socks.SOCKS5, '127.0.0.1', 1086)
+proxy = None
 
 chat_id = int(CHAT_ID)
 admin_id = int(ADMIN_ID)
