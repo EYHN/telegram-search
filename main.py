@@ -142,11 +142,20 @@ def renderRespondButton(result, from_):
 @events.register(events.NewMessage)
 async def ClientMessageHandler(event):
   if event.chat_id == chat_id and event.raw_text and len(event.raw_text.strip()) >= 0:
+    first_name = ''
+    last_name = ''
+    username = ''
+    try:
+      first_name = event.sender.first_name
+      last_name = event.sender.last_name
+      username = event.sender.username
+    except:
+      pass
     es.index(index=elastic_index, body={"content": html.escape(event.raw_text).replace('\n',' '), 
                                         "date": int(event.date.timestamp()*1000), 
                                         "url": "https://t.me/c/%s/%s" % (share_id, event.id),
-                                        "name": (" ".join([event.sender.first_name or '', event.sender.last_name or ''])).strip(),
-                                        "username": event.sender.username or ''
+                                        "name": (" ".join([first_name, last_name])).strip(),
+                                        "username": username
                                         }, id=event.id)
 
 @events.register(events.CallbackQuery)
