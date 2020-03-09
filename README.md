@@ -1,8 +1,10 @@
 # Telegram Search Bot
 
-这个bot从Bot：[@awesomeopensource_search_bot](http://t.me/awesomeopensource_search_bot)fork而来。
+这个bot从 Bot：[@awesomeopensource_search_bot](http://t.me/awesomeopensource_search_bot) fork而来。
 
-这里是为 [@awesomeopensource](https://t.me/awesomeopensource) 打造的搜索 Bot，直接发送你要搜索的内容即可。搜索支持 Lucene 语法。
+增加了对搜索结果中name，date的显示，以及相应的索引
+
+这里是为telegram打造的中文搜索 Bot，直接发送你要搜索的内容即可。搜索支持 Lucene 语法。
 
 同时可以为群组、频道、个人提供聊天记录搜索服务。
 
@@ -35,7 +37,7 @@
 
     clone 下这个项目 
 
-    安装依赖： `pip install -r requirements.txt`
+    安装依赖： `pip3 install -r requirements.txt`
 
     修改 main.py 中的配置或使用环境变量
     
@@ -45,7 +47,9 @@
     * CHAT_ID：你要搜索的 chat 的 ID，可以使用 [@getidsbot](https://t.me/getidsbot) 获取。
     * ADMIN_ID：管理员的 ID，可以使用 [@getidsbot](https://t.me/getidsbot) 获取。
 
-    生成 session 文件，运行 `python main.py` 提示输入手机号和验证码即可，在目录下会生成 session 文件夹。
+    在`config.py`中填入相应的信息
+
+    生成 session 文件，运行 `python3 main.py` 提示输入手机号和验证码即可，在目录下会生成 session 文件夹。
 
 3. **部署**
 
