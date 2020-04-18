@@ -45,7 +45,7 @@ Bot：[@awesomeopensource_search_bot](http://t.me/awesomeopensource_search_bot)
     * CHAT_ID：你要搜索的 chat 的 ID，可以使用 [@getidsbot](https://t.me/getidsbot) 获取。
     * ADMIN_ID：管理员的 ID，可以使用 [@getidsbot](https://t.me/getidsbot) 获取。
 
-    生成 session 文件，运行 `python main.py` 提示输入手机号和验证码即可，在目录下会生成 session 文件夹。
+    先创建一个 `session` 文件夹（`mkdir session`），运行 `python main.py` 提示输入手机号和验证码即可，`session` 文件夹里面会生成几个数据库文件。
 
 3. **部署**
 
