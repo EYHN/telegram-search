@@ -54,6 +54,8 @@ Bot：[@awesomeopensource_search_bot](http://t.me/awesomeopensource_search_bot)
     修改 docker-compose.yml 中的环境变量
 
     使用 docker-compose 部署：`docker-compose up -d`
+    
+    启动完成后用管理员的账号（之前配置的 ADMIN_ID）向 Bot 发送命令 `/download_history` 下载历史记录。
 
 ## 继续开发
 
